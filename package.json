@@ -1,0 +1,54 @@
+{
+  "name": "sozvon-quest",
+  "version": "0.1.0",
+  "description": "Созвон Квест — ассистент для созвонов: слушает звонок, закрывает озвученные тезисы и ставит балл из 100",
+  "main": "src/main/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "start:mock": "electron . --stt=mock",
+    "shot": "electron . --screenshot=outputs/shot.png",
+    "test:llm": "node test/test-llm.js",
+    "test:stt": "node test/test-stt-chunked.js",
+    "test:audio": "node test/test-audio-file.js",
+    "build": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^44.2.0",
+    "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.12.0",
+    "@grpc/proto-loader": "^0.7.13"
+  },
+  "productName": "SozvonQuest",
+  "author": "Иван Дробитько <drobitkoivan@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/glxaoc/sozvon-quest",
+  "build": {
+    "appId": "pro.drobitko.sozvonquest",
+    "productName": "SozvonQuest",
+    "artifactName": "SozvonQuest-${version}-portable.exe",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**",
+      "assets/**",
+      "proto/**",
+      "package.json",
+      "!**/*.map"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "assets/callquest.ico"
+    },
+    "portable": {
+      "artifactName": "SozvonQuest-${version}-portable.exe"
+    },
+    "asar": true,
+    "compression": "normal"
+  }
+}

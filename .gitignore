@@ -1,0 +1,11 @@
+node_modules/
+.env
+outputs/
+sessions/
+dist/
+*.diarize.json
+test/audio/stereo-call.wav
+test/audio/dialog2.wav
+test/audio/dialog.wav
+test/audio/phrase*.wav
+test/out/

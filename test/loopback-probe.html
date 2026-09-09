@@ -1,0 +1,27 @@
+<script>
+async function probe(mode) {
+  const out = { mode };
+  const tryGet = async (constraints, label) => {
+    try {
+      const s = await navigator.mediaDevices.getDisplayMedia(constraints);
+      const a = s.getAudioTracks(); const v = s.getVideoTracks();
+      out[label] = { audio: a.map(t => t.label + '/' + t.readyState), video: v.length };
+      // проверим, что аудио реально течёт
+      if (a.length) {
+        const ctx = new AudioContext({ sampleRate: 16000 });
+        const src = ctx.createMediaStreamSource(new MediaStream(a));
+        const an = ctx.createAnalyser(); src.connect(an);
+        await new Promise(r => setTimeout(r, 800));
+        const buf = new Float32Array(an.fftSize); an.getFloatTimeDomainData(buf);
+        let m = 0; for (const x of buf) m = Math.max(m, Math.abs(x));
+        out[label].peak = m; ctx.close();
+      }
+      s.getTracks().forEach(t => t.stop());
+    } catch (e) { out[label] = 'ERR ' + e.name + ': ' + e.message; }
+  };
+  await tryGet({ audio: true, video: true }, 'av');
+  await tryGet({ audio: true, video: false }, 'a');
+  await tryGet({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }, video: true }, 'av-raw');
+  return out;
+}
+</script>

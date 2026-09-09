@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'">
+  <title>Созвон Квест</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="titlebar">
+    <div class="brand"><span class="brand-dot"></span>Созвон Квест</div>
+    <div class="titlebar-right">
+      <button class="icon-btn" id="btn-history" title="Мои созвоны">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-top" title="Поверх всех окон" aria-pressed="true">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10M8 9l4 4 4-4M5 20h14"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-settings" title="Настройки">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ ONBOARDING ============ -->
+  <section id="screen-onboarding" class="screen">
+    <div class="ob-steps"><span class="ob-step" data-step="1">1</span><span class="ob-line"></span><span class="ob-step" data-step="2">2</span><span class="ob-line"></span><span class="ob-step" data-step="3">3</span></div>
+
+    <div class="ob-pane" data-pane="1">
+      <h1>Привет. Два ключа —<br>и можно созваниваться</h1>
+      <p class="lead">Созвон Квест слушает твой созвон и закрывает тезисы, которые ты озвучил. Для этого нужны два сервиса, оба российские, оплата в рублях, без VPN. Ключи хранятся только на этом компьютере.</p>
+      <div class="ob-card">
+        <div class="ob-card-head"><b>Шаг 1 · ИИ-сверка</b><a href="#" data-url="https://aitunnel.ru">aitunnel.ru ↗</a></div>
+        <p>Зарегистрируйся, пополни баланс на 100–200 ₽ и скопируй API-ключ из личного кабинета. Час созвона стоит несколько рублей.</p>
+        <div class="ob-row"><input id="ob-aitunnel" type="password" placeholder="sk-aitunnel-…" autocomplete="off"><button class="btn small" id="ob-check-aitunnel">Проверить</button></div>
+        <div class="ob-status" id="ob-status-aitunnel"></div>
+      </div>
+      <div class="ob-actions"><button class="btn primary" id="ob-next-1" disabled>Дальше</button></div>
+    </div>
+
+    <div class="ob-pane" data-pane="2" hidden>
+      <h1>Теперь слух</h1>
+      <p class="lead">Речь распознаёт Nexara: 0,36 ₽ за минуту, тишина не тарифицируется. Час созвона ≈ 40 ₽.</p>
+      <div class="ob-card">
+        <div class="ob-card-head"><b>Шаг 2 · Распознавание речи</b><a href="#" data-url="https://nexara.ru">nexara.ru ↗</a></div>
+        <p>Зарегистрируйся, пополни баланс и создай ключ в разделе API. Проверка отправит 4-секундный тестовый файл.</p>
+        <div class="ob-row"><input id="ob-nexara" type="password" placeholder="nx-…" autocomplete="off"><button class="btn small" id="ob-check-nexara">Проверить</button></div>
+        <div class="ob-status" id="ob-status-nexara"></div>
+      </div>
+      <div class="ob-actions"><button class="btn ghost small" id="ob-back-2">Назад</button><button class="btn primary" id="ob-next-2" disabled>Дальше</button></div>
+    </div>
+
+    <div class="ob-pane" data-pane="3" hidden>
+      <h1>Готово</h1>
+      <p class="lead">Перед созвоном напиши тезисы, по одному на строку. Звёздочка в начале строки — критичный тезис. Дальше просто говори: закрытия, серии и балл из 100 придут сами.</p>
+      <div class="ob-card">
+        <p><b>Гарнитура обязательна.</b> Без неё микрофон слышит динамики, и слова собеседника попадают в твою дорожку.</p>
+        <p><b>Работает с любым созвоном</b> — Телемост, Zoom, Meet, Teams: звук берётся из системы, а не из приложения.</p>
+        <p><b>Всё хранится локально</b> в папке Документы → SozvonQuest: транскрипт, разбор, балл.</p>
+      </div>
+      <div class="ob-actions"><button class="btn ghost small" id="ob-back-3">Назад</button><button class="btn primary" id="ob-finish">К тезисам</button></div>
+    </div>
+  </section>
+
+  <!-- ============ SETUP ============ -->
+  <section id="screen-setup" class="screen active">
+    <div class="best-pill" id="best-pill" hidden></div>
+    <h1>Что нужно<br>озвучить на созвоне?</h1>
+    <p class="lead">Один тезис — одна строка. Звёздочка в начале строки = критичный тезис: вес двойной, пропуск режет ранг.</p>
+    <label class="field">
+      <span>Название созвона</span>
+      <input id="in-title" type="text" placeholder="Например: демо для Ромашки" autocomplete="off">
+    </label>
+    <label class="field grow">
+      <span>Тезисы</span>
+      <textarea id="in-theses" placeholder="* Назвать стоимость пилота — 120 000 ₽&#10;Спросить, кто принимает решение&#10;Договориться о следующем шаге и дате"></textarea>
+    </label>
+    <div class="chips" id="setup-chips"></div>
+    <div class="about" id="about"><span>Сделал <a href="#" id="about-link">Иван Дробитько</a></span><a href="#" id="about-repo">исходники ↗</a></div>
+    <div class="setup-actions">
+      <label class="replay-speed" hidden><span>Скорость записи</span>
+        <select id="replay-speed"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option></select>
+      </label>
+      <button class="btn ghost" id="btn-replay" hidden>Прогнать запись</button>
+      <button class="btn primary" id="btn-start">Начать созвон</button>
+    </div>
+  </section>
+
+  <!-- ============ LIVE ============ -->
+  <section id="screen-live" class="screen">
+    <div class="live-head">
+      <div class="live-timer"><span class="rec-dot" id="rec-dot"></span><span id="timer">00:00</span><span class="replay-badge" id="replay-badge" hidden></span></div>
+      <div class="live-progress">
+        <span class="streak-stamp" id="streak-stamp" hidden></span>
+        <span class="progress-num"><b id="progress-closed">0</b>/<span id="progress-total">0</span></span>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
+    </div>
+    <div class="vu-row">
+      <div class="vu"><span class="vu-label">Я</span><div class="vu-bar"><div id="vu-me"></div></div><span class="dot" id="dot-me"></span></div>
+      <div class="vu"><span class="vu-label">Собеседник</span><div class="vu-bar"><div id="vu-them"></div></div><span class="dot" id="dot-them"></span></div>
+      <div class="llm-state" id="llm-state"><span class="dot"></span><span>AI</span></div>
+    </div>
+    <ol class="theses" id="theses"></ol>
+    <div class="transcript" id="transcript"></div>
+    <div class="mock-bar" id="mock-bar" hidden>
+      <select id="mock-channel"><option value="me">Я</option><option value="them">Собеседник</option></select>
+      <input id="mock-text" type="text" placeholder="что «сказано» в канал…">
+      <button class="btn small" id="mock-send">Сказать</button>
+    </div>
+    <div class="live-actions">
+      <button class="btn ghost" id="btn-finish">Завершить созвон</button>
+    </div>
+    <div class="err" id="live-err" hidden></div>
+  </section>
+
+  <!-- ============ RESULT ============ -->
+  <section id="screen-summary" class="screen">
+    <div class="summary-scroll" id="summary-scroll">
+      <div class="result-hero" id="result-hero">
+        <div class="result-top">
+          <div class="result-score"><b id="sum-score">0</b><span>/100</span></div>
+          <div class="result-rank" id="sum-rank"><span class="rank-letter" id="rank-letter">—</span></div>
+        </div>
+        <div class="result-title" id="sum-rank-title">—</div>
+        <div class="result-sub" id="sum-sub"></div>
+        <div class="record-pill" id="record-pill" hidden>Новый рекорд</div>
+      </div>
+
+      <div class="dog-say" id="dog-say" hidden>
+        <img src="../../assets/stepanych.png" alt="">
+        <div class="dog-say-bubble" id="dog-comment"></div>
+      </div>
+
+      <div class="grade-row" id="grade-row">
+        <div class="grade-chip perfect"><b id="cnt-perfect">0</b><span>Perfect</span></div>
+        <div class="grade-chip good"><b id="cnt-good">0</b><span>Good</span></div>
+        <div class="grade-chip partial"><b id="cnt-partial">0</b><span>Partial</span></div>
+        <div class="grade-chip miss"><b id="cnt-miss">0</b><span>Miss</span></div>
+      </div>
+
+      <div class="parts" id="parts"></div>
+
+      <h2 id="h-missed">Что стоило спросить</h2>
+      <ul class="sum-list missed" id="sum-missed"></ul>
+
+      <h2 id="h-learned">Что узнал</h2>
+      <ul class="sum-list learned" id="sum-learned"></ul>
+
+      <h2>Как прошло</h2>
+      <div class="hygiene" id="hygiene"></div>
+
+      <h2>Тезисы</h2>
+      <ul class="sum-list" id="sum-theses"></ul>
+
+      <details class="transcript-details"><summary>Транскрипт</summary><div class="sum-transcript" id="sum-transcript"></div></details>
+    </div>
+    <div class="summary-actions">
+      <button class="btn small" id="btn-open-md">summary.md</button>
+      <button class="btn small" id="btn-open-folder">Папка</button>
+      <button class="btn primary small" id="btn-new">Новый созвон</button>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section id="screen-history" class="screen">
+    <h1>Мои созвоны</h1>
+    <p class="lead" id="history-lead">Лучший результат и все сессии. Клик открывает разбор.</p>
+    <div class="history-list" id="history-list"></div>
+    <div class="summary-actions">
+      <button class="btn primary small" id="btn-history-new">Новый созвон</button>
+    </div>
+  </section>
+
+  <!-- ============ FX overlay ============ -->
+  <canvas id="fx"></canvas>
+
+  <!-- ============ Степаныч живёт в углу (live) ============ -->
+  <div class="dog" id="dog" data-state="idle" hidden>
+    <div class="bubble" id="dog-bubble"></div>
+    <div class="zz" id="dog-zz">z<span>z</span></div>
+    <img id="dog-img" src="../../assets/stepanych.png" alt="">
+  </div>
+
+  <!-- ============ ВЫБОР СПИКЕРА (прогон записи, скрытый режим) ============ -->
+  <div class="modal" id="modal-speaker" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h2>Кто из них ты?</h2><button class="icon-btn" id="btn-speaker-close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <div class="modal-body">
+        <p class="lead" id="speaker-lead">Запись моно, говорящих разделила диаризация. Выбери свою дорожку — только она пойдёт в сверку тезисов.</p>
+        <div class="speakers" id="speakers"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SETTINGS ============ -->
+  <div class="modal" id="modal-settings" hidden>
+    <div class="modal-card">
+      <div class="modal-head"><h2>Настройки</h2><button class="icon-btn" id="btn-settings-close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <div class="modal-body">
+        <h3>ИИ-сверка · AiTunnel</h3>
+        <label class="field"><span>API-ключ</span><input data-k="AITUNNEL_API_KEY" type="password" placeholder="sk-aitunnel-…"></label>
+        <label class="field"><span>Base URL</span><input data-k="AITUNNEL_BASE_URL" type="text"></label>
+        <label class="field"><span>Модель</span><input data-k="LLM_MODEL" type="text" placeholder="claude-haiku-4.5"></label>
+        <h3>Распознавание речи</h3>
+        <label class="field"><span>Провайдер</span>
+          <select data-k="STT_PROVIDER">
+            <option value="nexara">Nexara — по фразам, ~1–1,5 с</option>
+            <option value="yandex">Yandex SpeechKit v3 — стриминг, ~0,3–0,7 с</option>
+            <option value="aitunnel">AiTunnel — по фразам, ~1,5–3 с</option>
+            <option value="mock">Mock — печатать реплики руками</option>
+          </select>
+        </label>
+        <label class="field"><span>Nexara API-ключ</span><input data-k="NEXARA_API_KEY" type="password" placeholder="nx-…"></label>
+        <label class="field"><span>Модель Nexara</span><input data-k="NEXARA_MODEL" type="text" placeholder="nexara-ru"></label>
+        <label class="field"><span>Модель STT (AiTunnel)</span><input data-k="STT_MODEL" type="text" placeholder="whisper-large-v3-turbo"></label>
+        <label class="field"><span>Yandex API-ключ</span><input data-k="YANDEX_API_KEY" type="password"></label>
+        <label class="field"><span>Yandex folder id (необязательно)</span><input data-k="YANDEX_FOLDER_ID" type="text"></label>
+        <h3>Сверка</h3>
+        <label class="field"><span>Порог уверенности (0–1)</span><input data-k="CONFIDENCE_THRESHOLD" type="number" step="0.05" min="0" max="1"></label>
+        <label class="field"><span>Макс. интервал сверки, мс</span><input data-k="CHECK_INTERVAL_MS" type="number" step="500" min="1000"></label>
+        <label class="field"><span>Папка для итогов</span><input data-k="SESSIONS_DIR" type="text"></label>
+      </div>
+      <div class="modal-foot"><button class="btn ghost small" id="btn-settings-wizard">Мастер настройки</button><button class="btn primary small" id="btn-settings-save">Сохранить</button></div>
+    </div>
+  </div>
+
+  <script src="fx.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
