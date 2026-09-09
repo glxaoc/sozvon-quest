@@ -26,30 +26,18 @@
 
   <!-- ============ ONBOARDING ============ -->
   <section id="screen-onboarding" class="screen">
-    <div class="ob-steps"><span class="ob-step" data-step="1">1</span><span class="ob-line"></span><span class="ob-step" data-step="2">2</span><span class="ob-line"></span><span class="ob-step" data-step="3">3</span></div>
+    <div class="ob-steps"><span class="ob-step" data-step="1">1</span><span class="ob-line"></span><span class="ob-step" data-step="3">2</span></div>
 
     <div class="ob-pane" data-pane="1">
-      <h1>Привет. Два ключа —<br>и можно созваниваться</h1>
-      <p class="lead">Созвон Квест слушает твой созвон и закрывает тезисы, которые ты озвучил. Для этого нужны два сервиса, оба российские, оплата в рублях, без VPN. Ключи хранятся только на этом компьютере.</p>
+      <h1>Привет. Один ключ —<br>и можно созваниваться</h1>
+      <p class="lead">Созвон Квест слушает твой созвон и закрывает тезисы, которые ты озвучил. Речь распознаёт и сверяет ИИ через AiTunnel: российский сервис, оплата в рублях, без VPN. Ключ хранится только на этом компьютере.</p>
       <div class="ob-card">
-        <div class="ob-card-head"><b>Шаг 1 · ИИ-сверка</b><a href="#" data-url="https://aitunnel.ru">aitunnel.ru ↗</a></div>
-        <p>Зарегистрируйся, пополни баланс на 100–200 ₽ и скопируй API-ключ из личного кабинета. Час созвона стоит несколько рублей.</p>
+        <div class="ob-card-head"><b>Ключ AiTunnel</b><a href="#" data-url="https://aitunnel.ru">aitunnel.ru ↗</a></div>
+        <p>Зарегистрируйся, пополни баланс на 200–300 ₽ и скопируй API-ключ из личного кабинета. Час созвона обходится примерно в 120 ₽: распознавание речи двух собеседников плюс сверка.</p>
         <div class="ob-row"><input id="ob-aitunnel" type="password" placeholder="sk-aitunnel-…" autocomplete="off"><button class="btn small" id="ob-check-aitunnel">Проверить</button></div>
         <div class="ob-status" id="ob-status-aitunnel"></div>
       </div>
       <div class="ob-actions"><button class="btn primary" id="ob-next-1" disabled>Дальше</button></div>
-    </div>
-
-    <div class="ob-pane" data-pane="2" hidden>
-      <h1>Теперь слух</h1>
-      <p class="lead">Этот шаг можно пропустить: тогда речь распознаёт AiTunnel тем же Whisper, но фраза приходит на 2–3 секунды позже, и цифры будут прописью. Nexara быстрее и точнее на русской речи: 0,36 ₽ за минуту речи, час созвона ≈ 40 ₽.</p>
-      <div class="ob-card">
-        <div class="ob-card-head"><b>Шаг 2 · Распознавание речи</b><a href="#" data-url="https://nexara.ru">nexara.ru ↗</a></div>
-        <p>Зарегистрируйся, пополни баланс и создай ключ в разделе API. Проверка отправит 4-секундный тестовый файл.</p>
-        <div class="ob-row"><input id="ob-nexara" type="password" placeholder="nx-…" autocomplete="off"><button class="btn small" id="ob-check-nexara">Проверить</button></div>
-        <div class="ob-status" id="ob-status-nexara"></div>
-      </div>
-      <div class="ob-actions"><button class="btn ghost small" id="ob-back-2">Назад</button><button class="btn ghost small" id="ob-skip-2">Пропустить, один ключ</button><button class="btn primary" id="ob-next-2" disabled>Дальше</button></div>
     </div>
 
     <div class="ob-pane" data-pane="3" hidden>
@@ -207,9 +195,9 @@
         <h3>Распознавание речи</h3>
         <label class="field"><span>Провайдер</span>
           <select data-k="STT_PROVIDER">
-            <option value="nexara">Nexara — по фразам, ~1–1,5 с</option>
+            <option value="nexara">Nexara — отдельный ключ, быстрее на секунду, точнее с цифрами</option>
             <option value="yandex">Yandex SpeechKit v3 — стриминг, ~0,3–0,7 с</option>
-            <option value="aitunnel">AiTunnel — по фразам, ~1,5–3 с</option>
+            <option value="aitunnel">AiTunnel — один ключ, nova-3, ~2 с</option>
             <option value="mock">Mock — печатать реплики руками</option>
           </select>
         </label>

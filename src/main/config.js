@@ -10,9 +10,9 @@ const DEFAULTS = {
   AITUNNEL_BASE_URL: 'https://api.aitunnel.ru/v1',
   AITUNNEL_API_KEY: '',
   LLM_MODEL: 'claude-haiku-4.5',
-  // stt: 'nexara' | 'yandex' | 'aitunnel' | 'mock'
-  STT_PROVIDER: 'nexara',
-  STT_MODEL: 'whisper-large-v3',
+  // stt: 'aitunnel' (один ключ, дефолт) | 'nexara' | 'yandex' | 'mock'
+  STT_PROVIDER: 'aitunnel',
+  STT_MODEL: 'nova-3',
   NEXARA_API_KEY: '',
   NEXARA_BASE_URL: 'https://api.nexara.ru/v1',
   NEXARA_MODEL: 'nexara-ru',

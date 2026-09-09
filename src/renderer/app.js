@@ -27,7 +27,7 @@
   function renderSetupChips() {
     const c = S.cfg; const box = $('setup-chips'); box.innerHTML = '';
     const chip = (text, ok) => { const el = document.createElement('span'); el.className = 'chip' + (ok ? '' : ' bad'); el.innerHTML = `<span class="dot ${ok ? 'listening' : 'error'}"></span>${esc(text)}`; box.appendChild(el); };
-    const sttName = { nexara: 'Nexara', yandex: 'Yandex SpeechKit', aitunnel: 'AiTunnel · Whisper', mock: 'Mock STT' }[c.STT_PROVIDER] || c.STT_PROVIDER;
+    const sttName = { nexara: 'Nexara', yandex: 'Yandex SpeechKit', aitunnel: `AiTunnel · ${c.STT_MODEL}`, mock: 'Mock STT' }[c.STT_PROVIDER] || c.STT_PROVIDER;
     const sttOk = c.STT_PROVIDER === 'mock' || ({ nexara: c.hasNexaraKey, yandex: c.hasYandexKey, aitunnel: c.hasAitunnelKey })[c.STT_PROVIDER];
     chip(`Слух: ${sttName}`, sttOk);
     chip('ИИ-сверка', c.hasAitunnelKey);
@@ -483,31 +483,24 @@
     if (r.ok) {
       st.className = 'ob-status ok'; st.textContent = `Работает · ${r.info}`;
       OB[provider] = true;
-      const patch = provider === 'aitunnel' ? { AITUNNEL_API_KEY: input.value.trim() } : { NEXARA_API_KEY: input.value.trim(), STT_PROVIDER: 'nexara' };
-      S.cfg = await window.api.saveConfig(patch);
-      $(provider === 'aitunnel' ? 'ob-next-1' : 'ob-next-2').disabled = false;
+      S.cfg = await window.api.saveConfig({ AITUNNEL_API_KEY: input.value.trim() });
+      $('ob-next-1').disabled = false;
     } else {
       st.className = 'ob-status bad'; st.textContent = `Не сработало: ${r.error}`;
     }
   }
   function openOnboarding(step = 1) {
-    OB.aitunnel = !!S.cfg.hasAitunnelKey; OB.nexara = !!S.cfg.hasNexaraKey;
-    $('ob-next-1').disabled = !OB.aitunnel; $('ob-next-2').disabled = !OB.nexara;
+    OB.aitunnel = !!S.cfg.hasAitunnelKey;
+    $('ob-next-1').disabled = !OB.aitunnel;
     $('ob-status-aitunnel').textContent = OB.aitunnel ? 'Ключ уже сохранён — можно проверить заново или идти дальше' : '';
-    $('ob-status-nexara').textContent = OB.nexara ? 'Ключ уже сохранён — можно проверить заново или идти дальше' : '';
     $('modal-settings').hidden = true;
     obStep(step); show('onboarding');
   }
   function bindOnboarding() {
     $('ob-check-aitunnel').addEventListener('click', () => obCheck('aitunnel'));
-    $('ob-check-nexara').addEventListener('click', () => obCheck('nexara'));
     $('ob-aitunnel').addEventListener('keydown', (e) => { if (e.key === 'Enter') obCheck('aitunnel'); });
-    $('ob-nexara').addEventListener('keydown', (e) => { if (e.key === 'Enter') obCheck('nexara'); });
-    $('ob-next-1').addEventListener('click', () => obStep(2));
-    $('ob-next-2').addEventListener('click', () => obStep(3));
-    $('ob-back-2').addEventListener('click', () => obStep(1));
-    $('ob-skip-2').addEventListener('click', async () => { S.cfg = await window.api.saveConfig({ STT_PROVIDER: 'aitunnel' }); $('ob-status-nexara').className = 'ob-status'; $('ob-status-nexara').textContent = 'Распознавание через AiTunnel (Whisper large-v3)'; obStep(3); });
-    $('ob-back-3').addEventListener('click', () => obStep(2));
+    $('ob-next-1').addEventListener('click', () => obStep(3));
+    $('ob-back-3').addEventListener('click', () => obStep(1));
     $('ob-finish').addEventListener('click', () => { try { localStorage.setItem('cq.onboarded', '1'); } catch (e) { /* noop */ } renderSetupChips(); show('setup'); });
     document.querySelectorAll('[data-url]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); window.api.openUrl(a.dataset.url); }));
     $('about-link').addEventListener('click', (e) => { e.preventDefault(); window.api.openUrl(ABOUT.author); });
