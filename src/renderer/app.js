@@ -469,7 +469,7 @@
   }
 
   // ---------- onboarding ----------
-  const ABOUT = { author: 'https://t.me/Ioann_d', repo: 'https://github.com/glxaoc/sozvon-quest' };
+  const ABOUT = { author: 'https://t.me/ivandrobitko', repo: 'https://github.com/glxaoc/sozvon-quest' };
   const OB = { aitunnel: false, nexara: false };
   function obStep(n) {
     document.querySelectorAll('.ob-pane').forEach((p) => { p.hidden = Number(p.dataset.pane) !== n; });
