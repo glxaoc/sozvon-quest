@@ -27,7 +27,7 @@
   function renderSetupChips() {
     const c = S.cfg; const box = $('setup-chips'); box.innerHTML = '';
     const chip = (text, ok) => { const el = document.createElement('span'); el.className = 'chip' + (ok ? '' : ' bad'); el.innerHTML = `<span class="dot ${ok ? 'listening' : 'error'}"></span>${esc(text)}`; box.appendChild(el); };
-    const sttName = { nexara: 'Nexara', yandex: 'Yandex SpeechKit', aitunnel: 'AiTunnel', mock: 'Mock STT' }[c.STT_PROVIDER] || c.STT_PROVIDER;
+    const sttName = { nexara: 'Nexara', yandex: 'Yandex SpeechKit', aitunnel: 'AiTunnel · Whisper', mock: 'Mock STT' }[c.STT_PROVIDER] || c.STT_PROVIDER;
     const sttOk = c.STT_PROVIDER === 'mock' || ({ nexara: c.hasNexaraKey, yandex: c.hasYandexKey, aitunnel: c.hasAitunnelKey })[c.STT_PROVIDER];
     chip(`Слух: ${sttName}`, sttOk);
     chip('ИИ-сверка', c.hasAitunnelKey);
@@ -506,6 +506,7 @@
     $('ob-next-1').addEventListener('click', () => obStep(2));
     $('ob-next-2').addEventListener('click', () => obStep(3));
     $('ob-back-2').addEventListener('click', () => obStep(1));
+    $('ob-skip-2').addEventListener('click', async () => { S.cfg = await window.api.saveConfig({ STT_PROVIDER: 'aitunnel' }); $('ob-status-nexara').className = 'ob-status'; $('ob-status-nexara').textContent = 'Распознавание через AiTunnel (Whisper large-v3)'; obStep(3); });
     $('ob-back-3').addEventListener('click', () => obStep(2));
     $('ob-finish').addEventListener('click', () => { try { localStorage.setItem('cq.onboarded', '1'); } catch (e) { /* noop */ } renderSetupChips(); show('setup'); });
     document.querySelectorAll('[data-url]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); window.api.openUrl(a.dataset.url); }));
@@ -566,7 +567,7 @@
     window.api.on('nudge', onNudge);
 
     let onboarded = false; try { onboarded = localStorage.getItem('cq.onboarded') === '1'; } catch (e) { /* noop */ }
-    const needKeys = !S.cfg.hasAitunnelKey || (S.cfg.STT_PROVIDER === 'nexara' && !S.cfg.hasNexaraKey);
+    const needKeys = !S.cfg.hasAitunnelKey;
     if (S.args.onboarding || (!S.args.demo && !S.args.replay && !S.args.autostart && (needKeys || !onboarded))) openOnboarding(!S.cfg.hasAitunnelKey || S.args.onboarding ? 1 : 3);
 
     const DEMO = ['* Назвать стоимость пилота — 120 000 ₽', 'Спросить, кто принимает решение', 'Рассказать кейс: возврат 1,9 млн ₽ за 2 месяца', 'Предложить пилот на 2 недели', 'Договориться о следующем шаге и дате'];

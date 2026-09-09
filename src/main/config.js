@@ -12,7 +12,7 @@ const DEFAULTS = {
   LLM_MODEL: 'claude-haiku-4.5',
   // stt: 'nexara' | 'yandex' | 'aitunnel' | 'mock'
   STT_PROVIDER: 'nexara',
-  STT_MODEL: 'nemotron-3.5-asr-streaming-multilingual-0.6b',
+  STT_MODEL: 'whisper-large-v3',
   NEXARA_API_KEY: '',
   NEXARA_BASE_URL: 'https://api.nexara.ru/v1',
   NEXARA_MODEL: 'nexara-ru',
@@ -55,6 +55,8 @@ function load(userDataDir) {
   }
   // переменные окружения перекрывают всё (удобно для тестов: LLM_MODEL=claude-haiku-4.5 node test/test-llm.js)
   for (const k of Object.keys(DEFAULTS)) if (process.env[k] !== undefined && process.env[k] !== '') cfg[k] = process.env[k];
+  // режим «один ключ»: выбран Nexara, но ключа нет — слушаем через AiTunnel
+  if (cfg.STT_PROVIDER === 'nexara' && !cfg.NEXARA_API_KEY && cfg.AITUNNEL_API_KEY) cfg.STT_PROVIDER = 'aitunnel';
   return coerce(cfg);
 }
 
