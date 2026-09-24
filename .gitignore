@@ -9,3 +9,4 @@ test/audio/dialog2.wav
 test/audio/dialog.wav
 test/audio/phrase*.wav
 test/out/
+models/

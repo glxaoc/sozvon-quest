@@ -10,6 +10,12 @@ const DEFAULTS = {
   AITUNNEL_BASE_URL: 'https://api.aitunnel.ru/v1',
   AITUNNEL_API_KEY: '',
   LLM_MODEL: 'claude-haiku-4.5',
+  // 'aitunnel' — сверка в облаке по ключу; 'local' — модель на компьютере
+  LLM_PROVIDER: 'aitunnel',
+  MODELS_DIR: '',
+  MODELS_MIRROR: '',
+  LOCAL_GPU: 'auto',
+  LOCAL_THREADS: '',
   // stt: 'aitunnel' (один ключ, дефолт) | 'nexara' | 'yandex' | 'mock'
   STT_PROVIDER: 'aitunnel',
   STT_MODEL: 'nova-3',
@@ -57,6 +63,8 @@ function load(userDataDir) {
   for (const k of Object.keys(DEFAULTS)) if (process.env[k] !== undefined && process.env[k] !== '') cfg[k] = process.env[k];
   // режим «один ключ»: выбран Nexara, но ключа нет — слушаем через AiTunnel
   if (cfg.STT_PROVIDER === 'nexara' && !cfg.NEXARA_API_KEY && cfg.AITUNNEL_API_KEY) cfg.STT_PROVIDER = 'aitunnel';
+  // режим «без ключа»: облачный слух без ключа невозможен — слушаем на компьютере
+  if (cfg.LLM_PROVIDER === 'local' && cfg.STT_PROVIDER === 'aitunnel' && !cfg.AITUNNEL_API_KEY) cfg.STT_PROVIDER = 'local';
   return coerce(cfg);
 }
 

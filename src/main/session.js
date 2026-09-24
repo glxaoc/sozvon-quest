@@ -4,6 +4,7 @@ const { EventEmitter } = require('events');
 const { createStt } = require('./stt');
 const { Matcher, debrief } = require('./llm/matcher');
 const score = require('./score');
+const callTypes = require('./call-types');
 const { exportSession } = require('./export');
 
 const DEBOUNCE_MS = 400;       // ждём, не договорит ли пользователь
@@ -33,8 +34,9 @@ function slug(s) {
 }
 
 class Session extends EventEmitter {
-  constructor({ title, theses, config, sttProvider, log, replay }) {
+  constructor({ title, theses, config, sttProvider, log, replay, callType }) {
     super();
+    this.callType = callTypes.get(callType).id;
     this.id = new Date().toISOString().replace(/[:.]/g, '-');
     this.title = title || 'Созвон';
     this.config = config;
@@ -321,13 +323,13 @@ class Session extends EventEmitter {
     const durationSec = this.replay ? this.audioClock : (this.endedAt - this.startedAt) / 1000;
     this.emit('status', { channel: 'llm', state: 'checking', detail: 'разбор созвона' });
     try {
-      this.debrief = await debrief(this.config, { theses: this.theses, transcript: this.transcript, log: this.log });
+      this.debrief = await debrief(this.config, { theses: this.theses, transcript: this.transcript, context: callTypes.get(this.callType).context, log: this.log });
       if (this.debrief.usage) { this.matcher.usage.calls++; this.matcher.usage.prompt_tokens += this.debrief.usage.prompt_tokens || 0; this.matcher.usage.completion_tokens += this.debrief.usage.completion_tokens || 0; }
     } catch (e) {
       this.log('debrief failed', e.message);
       this.debrief = { theses: [], comment: '', highlight: '' };
     }
-    this.score = score.compute({ theses: this.theses, transcript: this.transcript, durationSec, debrief: this.debrief });
+    this.score = score.compute({ theses: this.theses, transcript: this.transcript, durationSec, debrief: this.debrief, callType: this.callType });
     this.emit('status', { channel: 'llm', state: 'idle' });
     return this.score;
   }
@@ -335,7 +337,7 @@ class Session extends EventEmitter {
   // ---- snapshot --------------------------------------------------------
   snapshot() {
     return {
-      id: this.id, title: this.title, startedAt: this.startedAt, endedAt: this.endedAt,
+      id: this.id, title: this.title, callType: this.callType, startedAt: this.startedAt, endedAt: this.endedAt,
       theses: this.theses, transcript: this.transcript, matches: this.matches,
       stt: this.sttProviderName, llm: this.config.LLM_MODEL, usage: this.matcher.usage, replay: this.replay,
       score: this.score, debrief: this.debrief ? { comment: this.debrief.comment, highlight: this.debrief.highlight } : null,

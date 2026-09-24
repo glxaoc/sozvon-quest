@@ -2,10 +2,12 @@
 const { MockStt } = require('./mock');
 const { AitunnelChunkedStt } = require('./aitunnel-chunked');
 const { YandexStreamingStt } = require('./yandex');
+const { LocalToneStt } = require('./local-tone');
 
 function createStt(provider, opts) {
   switch (provider) {
     case 'yandex': return new YandexStreamingStt(opts);
+    case 'local': return new LocalToneStt(opts);
     case 'mock': return new MockStt(opts);
     case 'nexara': return new AitunnelChunkedStt({
       ...opts,

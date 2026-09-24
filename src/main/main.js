@@ -6,6 +6,10 @@ const config = require('./config');
 const { Session } = require('./session');
 const replay = require('./replay');
 const history = require('./history');
+const callTypes = require('./call-types');
+const templates = require('./templates');
+const models = require('./models');
+const localLlm = require('./llm/local');
 
 // ---- CLI args: --stt=mock|aitunnel|yandex  --screenshot=path  --demo -------
 const argv = process.argv.slice(1);
@@ -13,7 +17,7 @@ const arg = (name) => {
   const hit = argv.find((a) => a.startsWith(`--${name}=`));
   return hit ? hit.slice(name.length + 3) : (argv.includes(`--${name}`) ? true : null);
 };
-const ARGS = { stt: arg('stt'), screenshot: arg('screenshot'), demo: !!arg('demo'), autostart: Number(arg('autostart')) || 0, replay: arg('replay') || null, me: arg('me') || null, speed: Number(arg('speed')) || 0, theses: arg('theses') || null, onboarding: !!arg('onboarding') };
+const ARGS = { stt: arg('stt'), screenshot: arg('screenshot'), demo: !!arg('demo'), autostart: Number(arg('autostart')) || 0, replay: arg('replay') || null, me: arg('me') || null, speed: Number(arg('speed')) || 0, theses: arg('theses') || null, onboarding: !!arg('onboarding'), compact: !!arg('compact') };
 if (ARGS.theses) { try { ARGS.thesesText = fs.readFileSync(ARGS.theses, 'utf8'); } catch (e) { ARGS.thesesText = null; } }
 
 let win = null;
@@ -85,6 +89,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   cfg = config.load(app.getPath('userData'));
+  if (!cfg.MODELS_DIR) cfg.MODELS_DIR = path.join(app.getPath('userData'), 'models');
   if (ARGS.stt) cfg.STT_PROVIDER = ARGS.stt;
   else if (ARGS.demo) cfg.STT_PROVIDER = 'mock';
 
@@ -112,12 +117,13 @@ ipcMain.handle('config:set', (_e, patch) => {
   }
   config.save(app.getPath('userData'), clean);
   cfg = config.load(app.getPath('userData'));
+  if (!cfg.MODELS_DIR) cfg.MODELS_DIR = path.join(app.getPath('userData'), 'models');
   if (ARGS.stt) cfg.STT_PROVIDER = ARGS.stt;
   return config.publicView(cfg);
 });
 
-function newSession({ title, theses, sttProvider, replay: isReplay }) {
-  current = new Session({ title, theses, config: cfg, sttProvider, log, replay: !!isReplay });
+function newSession({ title, theses, sttProvider, replay: isReplay, callType }) {
+  current = new Session({ title, theses, config: cfg, sttProvider, log, replay: !!isReplay, callType });
   current.on('transcript', (ev) => send('transcript', ev));
   current.on('thesis', (ev) => send('thesis', ev));
   current.on('match', (ev) => {
@@ -130,6 +136,7 @@ function newSession({ title, theses, sttProvider, replay: isReplay }) {
   current.on('nudge', (ev) => { log('nudge', ev); send('nudge', ev); });
   current.on('finished', (ev) => { send('finished', ev); if (pendingShot3) { pendingShot3(); pendingShot3 = null; } });
   current.start();
+  if (cfg.LLM_PROVIDER === 'local') localLlm.warmup(cfg, log);
   const statsTimer = setInterval(() => {
     if (!current || current.finished) return clearInterval(statsTimer);
     log('audio', current.audioStats());
@@ -137,9 +144,9 @@ function newSession({ title, theses, sttProvider, replay: isReplay }) {
   return current.snapshot();
 }
 
-ipcMain.handle('session:start', (_e, { title, theses, replay: isReplay }) => {
+ipcMain.handle('session:start', (_e, { title, theses, replay: isReplay, callType }) => {
   if (current && !current.finished) return { error: 'сессия уже идёт' };
-  return newSession({ title, theses, sttProvider: cfg.STT_PROVIDER, replay: isReplay });
+  return newSession({ title, theses, sttProvider: cfg.STT_PROVIDER, replay: isReplay, callType });
 });
 
 // ---- прогон записи по спикерам --------------------------------------------
@@ -222,3 +229,60 @@ ipcMain.handle('replay:pick', async () => {
   return { path: p, name: path.basename(p), bytes: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) };
 });
 ipcMain.handle('window:top', (_e, flag) => { if (win) win.setAlwaysOnTop(!!flag, 'floating'); return !!flag; });
+
+// ---- типы созвонов и сохранённые списки ------------------------------------
+ipcMain.handle('types:list', () => callTypes.list());
+
+// ---- модели для режима «без ключа» ------------------------------------------
+let dlAbort = null;
+ipcMain.handle('models:status', () => models.status(cfg.MODELS_DIR));
+ipcMain.handle('models:download', async (_e, ids) => {
+  if (dlAbort) return { error: 'загрузка уже идёт' };
+  dlAbort = new AbortController();
+  try {
+    for (const id of ids) {
+      await models.download(cfg.MODELS_DIR, id, {
+        mirror: cfg.MODELS_MIRROR, signal: dlAbort.signal,
+        onProgress: (bytes) => send('models-progress', { id, bytes }),
+      });
+    }
+    return { ok: true, status: models.status(cfg.MODELS_DIR) };
+  } catch (e) {
+    log('models download', e.message);
+    return { error: e.message, status: models.status(cfg.MODELS_DIR) };
+  } finally {
+    dlAbort = null;
+  }
+});
+ipcMain.handle('models:cancel', () => { if (dlAbort) dlAbort.abort(); return true; });
+ipcMain.handle('models:check', async () => {
+  // короткая проверка локальной сверки: загрузить модель и ответить на тестовый вопрос
+  const t0 = Date.now();
+  try {
+    const { complete } = require('./llm/chat');
+    const r = await complete({ ...cfg, LLM_PROVIDER: 'local' }, { system: 'Отвечай только JSON.', user: 'Верни {"ok":true}', maxTokens: 20, schema: { type: 'object', properties: { ok: { type: 'boolean' } } }, log });
+    return { ok: /true/.test(r.text), ms: Date.now() - t0 };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+ipcMain.handle('templates:list', () => templates.read(app.getPath('userData')));
+ipcMain.handle('templates:save', (_e, t) => templates.save(app.getPath('userData'), t));
+ipcMain.handle('templates:remove', (_e, id) => templates.remove(app.getPath('userData'), id));
+
+// ---- компактный режим: узкая полоска поверх созвона ------------------------
+let normalBounds = null;
+const COMPACT_H = 132;
+ipcMain.handle('window:compact', (_e, flag) => {
+  if (!win) return false;
+  if (flag) {
+    if (!normalBounds) normalBounds = win.getBounds();
+    win.setMinimumSize(300, COMPACT_H);
+    const b = win.getBounds();
+    win.setBounds({ x: b.x, y: b.y, width: b.width, height: COMPACT_H });
+  } else if (normalBounds) {
+    const b = win.getBounds();
+    win.setMinimumSize(340, 480);
+    win.setBounds({ x: b.x, y: b.y, width: normalBounds.width, height: normalBounds.height });
+    normalBounds = null;
+  }
+  return !!flag;
+});

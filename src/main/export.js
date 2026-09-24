@@ -2,6 +2,7 @@
 // Экспорт итога сессии: summary.md + session.json в SESSIONS_DIR/<дата>_<slug>/
 const fs = require('fs');
 const path = require('path');
+const callTypes = require('./call-types');
 
 const stripQ = (s) => String(s ?? '').replace(/^[«"'\s]+|[»"'\s]+$/g, '');
 
@@ -24,6 +25,8 @@ function buildMarkdown(s) {
   const dur = (snap.endedAt || Date.now()) - snap.startedAt;
   const lines = [];
   lines.push(`# ${snap.title} — ${fmtDate(snap.startedAt)}`);
+  lines.push('');
+  lines.push(`Тип: ${callTypes.get(snap.callType).name}`);
   lines.push('');
   lines.push(`Длительность: ${mmss(dur / 1000)} · Закрыто ${closed.length}/${snap.theses.length} · STT: ${snap.stt} · LLM: ${snap.llm} (${snap.usage.calls} сверок, ${snap.usage.prompt_tokens + snap.usage.completion_tokens} токенов)`);
   lines.push('');

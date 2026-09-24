@@ -19,7 +19,9 @@
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.12.0",
-    "@grpc/proto-loader": "^0.7.13"
+    "@grpc/proto-loader": "^0.7.13",
+    "node-llama-cpp": "^3.21.1",
+    "sherpa-onnx-node": "^1.13.8"
   },
   "productName": "SozvonQuest",
   "author": "Иван Дробитько <drobitkoivan@gmail.com>",
@@ -37,7 +39,13 @@
       "assets/**",
       "proto/**",
       "package.json",
-      "!**/*.map"
+      "!**/*.map",
+      "!node_modules/@node-llama-cpp/win-x64-cuda/**",
+      "!node_modules/@node-llama-cpp/win-x64-cuda-ext/**",
+      "!node_modules/@node-llama-cpp/win-arm64/**",
+      "!node_modules/@node-llama-cpp/*-cuda*/**",
+      "!node_modules/node-llama-cpp/llama/gitRelease.bundle",
+      "!models/**"
     ],
     "win": {
       "target": [
@@ -49,6 +57,11 @@
       "artifactName": "SozvonQuest-${version}-portable.exe"
     },
     "asar": true,
-    "compression": "normal"
+    "compression": "normal",
+    "asarUnpack": [
+      "node_modules/sherpa-onnx-*/**",
+      "node_modules/@node-llama-cpp/**",
+      "node_modules/node-llama-cpp/**"
+    ]
   }
 }

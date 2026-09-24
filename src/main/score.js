@@ -1,4 +1,5 @@
 'use strict';
+const callTypes = require('./call-types');
 // Балл созвона из 100 в духе караоке: покрытие тезисов (65) + собранная информация (25) + тайминг (10).
 // Гигиена разговора (доля речи, монологи, паразиты, смены говорящих) считается, но в балл не входит.
 
@@ -62,7 +63,7 @@ function hygiene(transcript, durationSec) {
 
 // theses: [{ critical, status, confidence, closedBy, closedAt, suspect, kind, answered }]
 // debrief (необязательно): результат LLM-разбора — kind/answered по каждому тезису
-function compute({ theses, transcript, durationSec, debrief }) {
+function compute({ theses, transcript, durationSec, debrief, callType }) {
   // длительность не может быть короче последней реплики или последнего закрытия (страховка для прогонов записей)
   durationSec = Math.max(durationSec || 0, ...transcript.map((e) => e.t1 || 0), ...theses.map((t) => t.closedAt || 0));
   const info = (t) => debrief?.theses?.find((d) => d.id === t.id) || {};
@@ -97,7 +98,7 @@ function compute({ theses, transcript, durationSec, debrief }) {
   const criticalMiss = graded.some((g) => g.critical && g.grade === 'miss');
   if (criticalMiss) total = Math.min(total, 89); // как в osu!: промах по критичному — потолок A
   total = Math.max(0, Math.min(100, total));
-  const { rank, title } = rankFor(total);
+  const { rank, title } = callTypes.rankFor(total, callType);
 
   const counts = { perfect: 0, good: 0, partial: 0, miss: 0 };
   graded.forEach((g) => { counts[g.grade]++; });
@@ -107,7 +108,8 @@ function compute({ theses, transcript, durationSec, debrief }) {
     parts: { coverage: Math.round(coverage * 100), info: infoScore == null ? null : Math.round(infoScore * 100), timing: Math.round(timing * 100) },
     weights: { coverage: wCov, info: wInfo, timing: 10 },
     counts, graded,
-    hygiene: hygiene(transcript, durationSec),
+    hygiene: { ...hygiene(transcript, durationSec), talkNorm: callTypes.get(callType).talk },
+    callType: callTypes.get(callType).id,
     comment: debrief?.comment || '',
     highlight: debrief?.highlight || '',
   };

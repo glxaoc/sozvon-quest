@@ -26,6 +26,8 @@ function list(dir) {
       closed, total: s.theses.length,
       score: s.score ? s.score.total : null,
       rank: s.score ? s.score.rank : null,
+      title2: s.score ? s.score.title : null,
+      callType: s.callType || 'sales',
       isReplay: !!s.replay,
     });
   }

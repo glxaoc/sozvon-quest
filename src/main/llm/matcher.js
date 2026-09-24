@@ -1,4 +1,5 @@
 'use strict';
+const { complete } = require('./chat');
 // LLM-сверка: «какие из открытых тезисов пользователь только что явно озвучил?»
 // Claude через AiTunnel (OpenAI-совместимый chat/completions). Ответ — строго JSON.
 
@@ -54,6 +55,24 @@ function extractJson(text) {
   try { return JSON.parse(s.slice(a, b + 1)); } catch (e) { return null; }
 }
 
+const MATCH_SCHEMA = {
+  type: 'object',
+  properties: {
+    closed: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, matched_phrase: { type: 'string' }, confidence: { type: 'number' } } } },
+  },
+};
+const DEBRIEF_SCHEMA = {
+  type: 'object',
+  properties: {
+    theses: { type: 'array', items: { type: 'object', properties: {
+      id: { type: 'string' }, kind: { enum: ['ask', 'tell', 'agree'] }, answered: { enum: ['full', 'partial', 'none'] },
+      answer: { type: 'string' }, missed_at: { oneOf: [{ type: 'string' }, { type: 'null' }] }, missed_hint: { type: 'string' },
+    } } },
+    comment: { type: 'string' },
+    highlight: { type: 'string' },
+  },
+};
+
 class Matcher {
   constructor(config, log) {
     this.config = config;
@@ -62,37 +81,17 @@ class Matcher {
   }
 
   async check(input) {
-    if (!this.config.AITUNNEL_API_KEY) throw new Error('нет AITUNNEL_API_KEY');
     const hasNew = Array.isArray(input.recentMe) ? input.recentMe.some((r) => r.isNew) : !!(input.newMe && input.newMe.trim());
     if (!input.theses.length || !hasNew) return { closed: [], raw: null };
-    const body = {
-      model: this.config.LLM_MODEL || 'claude-sonnet-5',
-      temperature: 0,
-      max_tokens: 700,
-      messages: [
-        { role: 'system', content: SYSTEM },
-        { role: 'user', content: buildUser(input) },
-      ],
-    };
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), 25000);
     const started = Date.now();
     try {
-      const r = await fetch(`${this.config.AITUNNEL_BASE_URL}/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.config.AITUNNEL_API_KEY}` },
-        body: JSON.stringify(body),
-        signal: ctl.signal,
-      });
-      if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`);
-      const j = await r.json();
-      const text = j.choices?.[0]?.message?.content || '';
+      const { text, usage } = await complete(this.config, { system: SYSTEM, user: buildUser(input), maxTokens: 700, temperature: 0, schema: MATCH_SCHEMA, timeoutMs: 25000, log: this.log });
       this.usage.calls++;
-      this.usage.prompt_tokens += j.usage?.prompt_tokens || 0;
-      this.usage.completion_tokens += j.usage?.completion_tokens || 0;
+      this.usage.prompt_tokens += usage.prompt_tokens || 0;
+      this.usage.completion_tokens += usage.completion_tokens || 0;
       const parsed = extractJson(text);
       if (!parsed || !Array.isArray(parsed.closed)) {
-        this.log('matcher: unparseable answer', text.slice(0, 200));
+        this.log('matcher: unparseable answer', String(text).slice(0, 200));
         return { closed: [], raw: text, ms: Date.now() - started };
       }
       const ids = new Set(input.theses.map((t) => String(t.id)));
@@ -103,8 +102,6 @@ class Matcher {
     } catch (e) {
       this.usage.errors++;
       throw e;
-    } finally {
-      clearTimeout(timer);
     }
   }
 }
@@ -129,28 +126,18 @@ const DEBRIEF_SYSTEM = `Ты — Степаныч, корги-ассистент
 function mmss(sec) { const s = Math.max(0, Math.round(sec || 0)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
 
 // Разбор созвона по завершении: один запрос на весь транскрипт
-async function debrief(config, { theses, transcript, log = () => {} }) {
-  if (!config.AITUNNEL_API_KEY) throw new Error('нет AITUNNEL_API_KEY');
+async function debrief(config, { theses, transcript, context = 'деловой созвон', log = () => {} }) {
   const list = theses.map((t) => `- [${t.id}] ${t.text}${t.critical ? ' (критичный)' : ''} — ${t.status === 'closed' ? `озвучен в ${mmss(t.closedAt)}: «${t.matchedPhrase}»` : (t.suspect ? `частично: «${t.suspect.phrase}»` : 'НЕ озвучен')}`).join('\n');
   let lines = transcript.map((e) => `[${mmss(e.wall)}] ${e.channel === 'me' ? 'Я' : 'Собеседник'}: ${e.text}`);
   // страховка по объёму: ~40 тыс. символов (≈ 60 минут речи)
   let text = lines.join('\n');
-  if (text.length > 40000) text = text.slice(0, 20000) + '\n[…пропущена середина…]\n' + text.slice(-20000);
-  const body = {
-    model: config.LLM_MODEL || 'claude-haiku-4.5', temperature: 0.4, max_tokens: 1800,
-    messages: [
-      { role: 'system', content: DEBRIEF_SYSTEM },
-      { role: 'user', content: `ТЕЗИСЫ:\n${list}\n\nТРАНСКРИПТ:\n${text}` },
-    ],
-  };
+  // у локальной модели контекст меньше: ~18 тыс. символов ≈ 6 тыс. токенов
+  const limit = config.LLM_PROVIDER === 'local' ? 18000 : 40000;
+  if (text.length > limit) text = text.slice(0, limit / 2) + '\n[…пропущена середина…]\n' + text.slice(-limit / 2);
   const t0 = Date.now();
-  const r = await fetch(`${config.AITUNNEL_BASE_URL}/chat/completions`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.AITUNNEL_API_KEY}` },
-    body: JSON.stringify(body), signal: AbortSignal.timeout(60000),
-  });
-  if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
-  const j = await r.json();
-  const parsed = extractJson(j.choices?.[0]?.message?.content || '');
+  const { text: answer, usage } = await complete(config, { system: DEBRIEF_SYSTEM, user: `ТИП СОЗВОНА: ${context}. Оценивай и комментируй с учётом этого типа: на отчёте нормально говорить больше собеседника, на продажах — нет.\n\nТЕЗИСЫ:\n${list}\n\nТРАНСКРИПТ:\n${text}`, maxTokens: 1800, temperature: 0.4, schema: DEBRIEF_SCHEMA, timeoutMs: 120000, log });
+  const j = { usage };
+  const parsed = extractJson(answer);
   log(`debrief: ${Date.now() - t0} ms, ${j.usage?.prompt_tokens || 0}+${j.usage?.completion_tokens || 0} tok`);
   if (!parsed || !Array.isArray(parsed.theses)) return { theses: [], comment: '', highlight: '', usage: j.usage };
   return { ...parsed, usage: j.usage };

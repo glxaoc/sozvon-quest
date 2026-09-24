@@ -1,7 +1,7 @@
 'use strict';
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = ['transcript', 'thesis', 'match', 'status', 'finished', 'log', 'demo', 'replay-done', 'nudge'];
+const EVENTS = ['transcript', 'thesis', 'match', 'status', 'finished', 'log', 'demo', 'replay-done', 'nudge', 'models-progress'];
 
 contextBridge.exposeInMainWorld('api', {
   args: () => ipcRenderer.invoke('args'),
@@ -20,6 +20,15 @@ contextBridge.exposeInMainWorld('api', {
   showInFolder: (p) => ipcRenderer.invoke('shell:show', p),
   setAlwaysOnTop: (flag) => ipcRenderer.invoke('window:top', flag),
   quit: () => ipcRenderer.invoke('app:quit'),
+  callTypes: () => ipcRenderer.invoke('types:list'),
+  templatesList: () => ipcRenderer.invoke('templates:list'),
+  templatesSave: (t) => ipcRenderer.invoke('templates:save', t),
+  templatesRemove: (id) => ipcRenderer.invoke('templates:remove', id),
+  setCompact: (flag) => ipcRenderer.invoke('window:compact', flag),
+  modelsStatus: () => ipcRenderer.invoke('models:status'),
+  modelsDownload: (ids) => ipcRenderer.invoke('models:download', ids),
+  modelsCancel: () => ipcRenderer.invoke('models:cancel'),
+  modelsCheck: () => ipcRenderer.invoke('models:check'),
   openUrl: (url) => ipcRenderer.invoke('shell:url', url),
   checkKey: (provider, key) => ipcRenderer.invoke('keys:check', { provider, key }),
   pickReplay: () => ipcRenderer.invoke('replay:pick'),

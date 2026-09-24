@@ -15,6 +15,9 @@
       <button class="icon-btn" id="btn-history" title="Мои созвоны">
         <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
       </button>
+      <button class="icon-btn" id="btn-compact" title="Компактный режим" hidden>
+        <svg viewBox="0 0 24 24"><path d="M4 9h16M4 15h16"/></svg>
+      </button>
       <button class="icon-btn" id="btn-top" title="Поверх всех окон" aria-pressed="true">
         <svg viewBox="0 0 24 24"><path d="M12 3v10M8 9l4 4 4-4M5 20h14"/></svg>
       </button>
@@ -26,29 +29,54 @@
 
   <!-- ============ ONBOARDING ============ -->
   <section id="screen-onboarding" class="screen">
-    <div class="ob-steps"><span class="ob-step" data-step="1">1</span><span class="ob-line"></span><span class="ob-step" data-step="3">2</span></div>
+    <div class="ob-steps"><span class="ob-step" data-step="1">1</span><span class="ob-line"></span><span class="ob-step" data-step="2">2</span><span class="ob-line"></span><span class="ob-step" data-step="3">3</span></div>
 
-    <div class="ob-pane" data-pane="1">
-      <h1>Привет. Один ключ —<br>и можно созваниваться</h1>
-      <p class="lead">Созвон Квест не даёт забыть, что важно обсудить на созвоне: ты пишешь список, а по ходу разговора он отмечает, что уже сказано. Речь распознаёт и сверяет ИИ через AiTunnel: российский сервис, оплата в рублях, без VPN. Ключ хранится только на этом компьютере.</p>
+    <div class="ob-pane" data-pane="choice">
+      <h1>Привет. Как будем<br>работать?</h1>
+      <p class="lead">Созвон Квест не даёт забыть, что важно обсудить на созвоне: ты пишешь список, а по ходу разговора он отмечает, что уже сказано. Выбери, где будет работать ИИ, это можно поменять в настройках.</p>
+      <button class="ob-choice" id="ob-pick-local">
+        <span class="ob-choice-head"><b>Без ключа</b><span class="ob-tag">бесплатно</span></span>
+        <span>Всё работает на твоём компьютере, голос не уходит в интернет. Один раз скачать около 2,9 ГБ. На слабых ноутбуках пункты закрываются медленнее.</span>
+      </button>
+      <button class="ob-choice" id="ob-pick-key">
+        <span class="ob-choice-head"><b>С ключом AiTunnel</b><span class="ob-tag">≈120 ₽ за час</span></span>
+        <span>ИИ в облаке: быстрее и точнее, работает на любом ноутбуке. Нужен ключ российского сервиса AiTunnel, оплата в рублях, без VPN.</span>
+      </button>
+    </div>
+
+    <div class="ob-pane" data-pane="local" hidden>
+      <h1>Скачиваю модели</h1>
+      <p class="lead">Один раз, дальше всё работает без интернета. Если загрузка оборвётся, она продолжится с того же места.</p>
+      <div class="ob-card">
+        <div class="dl-item" data-id="stt"><div class="dl-head"><b>Распознавание речи</b><span class="dl-num" id="dl-num-stt">—</span></div><div class="dl-bar"><div id="dl-bar-stt"></div></div></div>
+        <div class="dl-item" data-id="llm"><div class="dl-head"><b>Сверка тезисов</b><span class="dl-num" id="dl-num-llm">—</span></div><div class="dl-bar"><div id="dl-bar-llm"></div></div></div>
+        <div class="ob-status" id="ob-status-local"></div>
+      </div>
+      <div class="ob-actions"><button class="btn ghost small" id="ob-back-local">Назад</button><button class="btn small" id="ob-dl-start">Скачать</button><button class="btn primary" id="ob-next-local" disabled>Дальше</button></div>
+    </div>
+
+    <div class="ob-pane" data-pane="key" hidden>
+      <h1>Ключ AiTunnel</h1>
+      <p class="lead">Речь распознаёт и сверяет ИИ через AiTunnel: российский сервис, оплата в рублях, без VPN. Ключ хранится только на этом компьютере.</p>
       <div class="ob-card">
         <div class="ob-card-head"><b>Ключ AiTunnel</b><a href="#" data-url="https://aitunnel.ru">aitunnel.ru ↗</a></div>
         <p>Зарегистрируйся, пополни баланс на 200–300 ₽ и скопируй API-ключ из личного кабинета. Час созвона обходится примерно в 120 ₽: распознавание речи двух собеседников плюс сверка.</p>
         <div class="ob-row"><input id="ob-aitunnel" type="password" placeholder="sk-aitunnel-…" autocomplete="off"><button class="btn small" id="ob-check-aitunnel">Проверить</button></div>
         <div class="ob-status" id="ob-status-aitunnel"></div>
       </div>
-      <div class="ob-actions"><button class="btn primary" id="ob-next-1" disabled>Дальше</button></div>
+      <div class="ob-actions"><button class="btn ghost small" id="ob-back-key">Назад</button><button class="btn primary" id="ob-next-1" disabled>Дальше</button></div>
     </div>
 
-    <div class="ob-pane" data-pane="3" hidden>
+    <div class="ob-pane" data-pane="done" hidden>
       <h1>Готово</h1>
-      <p class="lead">Перед созвоном напиши тезисы, по одному на строку. Звёздочка в начале строки — критичный тезис. Дальше просто говори: закрытия, серии и балл из 100 придут сами.</p>
+      <p class="lead">Выбери тип созвона и список пунктов: готовый, сохранённый или свой. Звёздочка в начале строки — критичный пункт. Дальше просто говори: закрытия, серии и балл из 100 придут сами.</p>
       <div class="ob-card">
         <p><b>Гарнитура обязательна.</b> Без неё микрофон слышит динамики, и слова собеседника попадают в твою дорожку.</p>
         <p><b>Работает с любым созвоном</b> — Телемост, Zoom, Meet, Teams: звук берётся из системы, а не из приложения.</p>
+        <p><b>Компактный режим</b> — кнопка с двумя полосками в шапке: окно сжимается до строки со следующим пунктом.</p>
         <p><b>Всё хранится локально</b> в папке Документы → SozvonQuest: транскрипт, разбор, балл.</p>
       </div>
-      <div class="ob-actions"><button class="btn ghost small" id="ob-back-3">Назад</button><button class="btn primary" id="ob-finish">К тезисам</button></div>
+      <div class="ob-actions"><button class="btn ghost small" id="ob-back-3">Назад</button><button class="btn primary" id="ob-finish">К пунктам</button></div>
     </div>
   </section>
 
@@ -56,13 +84,24 @@
   <section id="screen-setup" class="screen active">
     <div class="best-pill" id="best-pill" hidden></div>
     <h1>Что важно<br>не забыть на созвоне?</h1>
-    <p class="lead">Спросить, сказать, договориться — по одному пункту на строку. Звёздочка в начале строки = критичный: вес двойной, пропуск режет ранг.</p>
+    <div class="type-tabs" id="type-tabs" role="tablist"></div>
+    <div class="type-hint" id="type-hint"></div>
     <label class="field">
       <span>Название созвона</span>
       <input id="in-title" type="text" placeholder="Например: демо для Ромашки" autocomplete="off">
     </label>
+    <div class="tpl-row">
+      <select id="tpl-select" title="Готовые и сохранённые списки"></select>
+      <button class="btn ghost small" id="tpl-save" title="Сохранить текущий список, чтобы выбрать его в следующий раз">Сохранить</button>
+      <button class="btn ghost small" id="tpl-del" hidden>Удалить</button>
+    </div>
+    <div class="tpl-save-row" id="tpl-save-row" hidden>
+      <input id="tpl-name" type="text" placeholder="Название списка" autocomplete="off">
+      <button class="btn small" id="tpl-save-ok">ОК</button>
+      <button class="btn ghost small" id="tpl-save-cancel">Отмена</button>
+    </div>
     <label class="field grow">
-      <span>Тезисы</span>
+      <span>Пункты · по одному на строку, * в начале — критичный</span>
       <textarea id="in-theses" placeholder="* Назвать стоимость пилота — 120 000 ₽&#10;Спросить, кто принимает решение&#10;Договориться о следующем шаге и дате"></textarea>
     </label>
     <div class="chips" id="setup-chips"></div>
@@ -78,6 +117,15 @@
 
   <!-- ============ LIVE ============ -->
   <section id="screen-live" class="screen">
+    <div class="compact-bar" id="compact-bar">
+      <div class="cb-top">
+        <span class="rec-dot"></span><span class="cb-timer" id="cb-timer">00:00</span>
+        <span class="streak-stamp" id="cb-streak" hidden></span>
+        <span class="cb-progress"><b id="cb-closed">0</b>/<span id="cb-total">0</span></span>
+        <div class="progress-bar"><div class="progress-fill" id="cb-fill"></div></div>
+      </div>
+      <div class="cb-line" id="cb-line"><span class="cb-label">дальше</span><span class="cb-text" id="cb-text"></span></div>
+    </div>
     <div class="live-head">
       <div class="live-timer"><span class="rec-dot" id="rec-dot"></span><span id="timer">00:00</span><span class="replay-badge" id="replay-badge" hidden></span></div>
       <div class="live-progress">
@@ -188,13 +236,20 @@
     <div class="modal-card">
       <div class="modal-head"><h2>Настройки</h2><button class="icon-btn" id="btn-settings-close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
       <div class="modal-body">
-        <h3>ИИ-сверка · AiTunnel</h3>
+        <h3>ИИ-сверка</h3>
+        <label class="field"><span>Где работает сверка</span>
+          <select data-k="LLM_PROVIDER">
+            <option value="aitunnel">В облаке через AiTunnel — нужен ключ, быстрее</option>
+            <option value="local">На компьютере — без ключа, нужна скачанная модель</option>
+          </select>
+        </label>
         <label class="field"><span>API-ключ</span><input data-k="AITUNNEL_API_KEY" type="password" placeholder="sk-aitunnel-…"></label>
         <label class="field"><span>Base URL</span><input data-k="AITUNNEL_BASE_URL" type="text"></label>
         <label class="field"><span>Модель</span><input data-k="LLM_MODEL" type="text" placeholder="модель ИИ-сверки"></label>
         <h3>Распознавание речи</h3>
         <label class="field"><span>Провайдер</span>
           <select data-k="STT_PROVIDER">
+            <option value="local">На компьютере — T-one, без ключа и интернета</option>
             <option value="nexara">Nexara — отдельный ключ, быстрее на секунду, точнее с цифрами</option>
             <option value="yandex">Yandex SpeechKit v3 — стриминг, ~0,3–0,7 с</option>
             <option value="aitunnel">AiTunnel — один ключ, nova-3, ~2 с</option>
