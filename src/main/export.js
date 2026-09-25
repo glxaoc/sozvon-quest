@@ -28,7 +28,8 @@ function buildMarkdown(s) {
   lines.push('');
   lines.push(`Тип: ${callTypes.get(snap.callType).name}`);
   lines.push('');
-  lines.push(`Длительность: ${mmss(dur / 1000)} · Закрыто ${closed.length}/${snap.theses.length} · STT: ${snap.stt} · LLM: ${snap.llm} (${snap.usage.calls} сверок, ${snap.usage.prompt_tokens + snap.usage.completion_tokens} токенов)`);
+  const sttLabel = { local: 'на компьютере', aitunnel: 'облако', nexara: 'Nexara', yandex: 'Yandex', mock: 'вручную' }[snap.stt] || snap.stt;
+  lines.push(`Длительность: ${mmss(dur / 1000)} · Закрыто ${closed.length}/${snap.theses.length} · Распознавание: ${sttLabel} · Сверка: ${snap.llm} (${snap.usage.calls} запросов)`);
   lines.push('');
   if (snap.score) {
     const sc = snap.score;

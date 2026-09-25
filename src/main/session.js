@@ -339,7 +339,7 @@ class Session extends EventEmitter {
     return {
       id: this.id, title: this.title, callType: this.callType, startedAt: this.startedAt, endedAt: this.endedAt,
       theses: this.theses, transcript: this.transcript, matches: this.matches,
-      stt: this.sttProviderName, llm: this.config.LLM_MODEL, usage: this.matcher.usage, replay: this.replay,
+      stt: this.sttProviderName, llm: this.config.LLM_PROVIDER === 'local' ? 'на компьютере' : 'облако', usage: this.matcher.usage, replay: this.replay,
       score: this.score, debrief: this.debrief ? { comment: this.debrief.comment, highlight: this.debrief.highlight } : null,
       elapsed: this.elapsed(),
     };
