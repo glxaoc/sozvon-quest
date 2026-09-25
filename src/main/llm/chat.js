@@ -6,7 +6,7 @@ const local = require('./local');
 async function cloud(config, { system, user, maxTokens = 700, temperature = 0, timeoutMs = 25000 }) {
   if (!config.AITUNNEL_API_KEY) throw new Error('нет ключа AiTunnel');
   const body = {
-    model: config.LLM_MODEL || 'claude-haiku-4.5',
+    model: config.LLM_MODEL || 'gemini-3.5-flash-lite',
     temperature, max_tokens: maxTokens,
     messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
   };

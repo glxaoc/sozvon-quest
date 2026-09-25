@@ -1,6 +1,6 @@
 'use strict';
 // Живой тест LLM-сверки через AiTunnel. Кейсы 4–6 — из реальной сессии Ивана 08.09.2026 (пропуски первой версии промпта).
-// LLM_MODEL=claude-sonnet-5 node test/test-llm.js — прогнать на другой модели.
+// LLM_MODEL=gpt-5.4-nano node test/test-llm.js — прогнать на другой модели.
 const config = require('../src/main/config');
 const { Matcher } = require('../src/main/llm/matcher');
 

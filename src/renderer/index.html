@@ -34,13 +34,13 @@
     <div class="ob-pane" data-pane="choice">
       <h1>Привет. Как будем<br>работать?</h1>
       <p class="lead">Созвон Квест не даёт забыть, что важно обсудить на созвоне: ты пишешь список, а по ходу разговора он отмечает, что уже сказано. Выбери, где будет работать ИИ, это можно поменять в настройках.</p>
+      <button class="ob-choice" id="ob-pick-key">
+        <span class="ob-choice-head"><b>С ключом AiTunnel</b><span class="ob-tag" id="ob-key-price">≈20 ₽ за час</span></span>
+        <span>Речь распознаётся на твоём компьютере, в облако уходит только текст для сверки. Работает на любом ноутбуке. Нужен ключ российского сервиса AiTunnel, оплата в рублях, без VPN.</span>
+      </button>
       <button class="ob-choice" id="ob-pick-local">
         <span class="ob-choice-head"><b>Без ключа</b><span class="ob-tag">бесплатно</span></span>
-        <span>Всё работает на твоём компьютере, голос не уходит в интернет. Один раз скачать около 2,9 ГБ. На слабых ноутбуках пункты закрываются медленнее.</span>
-      </button>
-      <button class="ob-choice" id="ob-pick-key">
-        <span class="ob-choice-head"><b>С ключом AiTunnel</b><span class="ob-tag">≈120 ₽ за час</span></span>
-        <span>ИИ в облаке: быстрее и точнее, работает на любом ноутбуке. Нужен ключ российского сервиса AiTunnel, оплата в рублях, без VPN.</span>
+        <span>Всё работает на компьютере, ничего не уходит в интернет. Нужна видеокарта: после загрузки 2,9 ГБ проверю скорость и скажу, потянет ли.</span>
       </button>
     </div>
 
@@ -52,7 +52,7 @@
         <div class="dl-item" data-id="llm"><div class="dl-head"><b>Сверка тезисов</b><span class="dl-num" id="dl-num-llm">—</span></div><div class="dl-bar"><div id="dl-bar-llm"></div></div></div>
         <div class="ob-status" id="ob-status-local"></div>
       </div>
-      <div class="ob-actions"><button class="btn ghost small" id="ob-back-local">Назад</button><button class="btn small" id="ob-dl-start">Скачать</button><button class="btn primary" id="ob-next-local" disabled>Дальше</button></div>
+      <div class="ob-actions"><button class="btn ghost small" id="ob-back-local">Назад</button><button class="btn ghost small" id="ob-to-key" hidden>Перейти на ключ</button><button class="btn small" id="ob-dl-start">Скачать</button><button class="btn primary" id="ob-next-local" disabled>Дальше</button></div>
     </div>
 
     <div class="ob-pane" data-pane="key" hidden>
@@ -60,9 +60,10 @@
       <p class="lead">Речь распознаёт и сверяет ИИ через AiTunnel: российский сервис, оплата в рублях, без VPN. Ключ хранится только на этом компьютере.</p>
       <div class="ob-card">
         <div class="ob-card-head"><b>Ключ AiTunnel</b><a href="#" data-url="https://aitunnel.ru">aitunnel.ru ↗</a></div>
-        <p>Зарегистрируйся, пополни баланс на 200–300 ₽ и скопируй API-ключ из личного кабинета. Час созвона обходится примерно в 120 ₽: распознавание речи двух собеседников плюс сверка.</p>
+        <p>Зарегистрируйся, пополни баланс на 100–200 ₽ и скопируй API-ключ из личного кабинета. Речь распознаётся на твоём компьютере бесплатно, в облако уходит только текст для сверки: час созвона обходится примерно в 20 ₽.</p>
         <div class="ob-row"><input id="ob-aitunnel" type="password" placeholder="sk-aitunnel-…" autocomplete="off"><button class="btn small" id="ob-check-aitunnel">Проверить</button></div>
         <div class="ob-status" id="ob-status-aitunnel"></div>
+        <div class="dl-item" id="kdl-item" hidden><div class="dl-head"><b>Распознавание речи на компьютере</b><span class="dl-num" id="kdl-num">—</span></div><div class="dl-bar"><div id="kdl-bar"></div></div></div>
       </div>
       <div class="ob-actions"><button class="btn ghost small" id="ob-back-key">Назад</button><button class="btn primary" id="ob-next-1" disabled>Дальше</button></div>
     </div>
@@ -75,6 +76,7 @@
         <p><b>Работает с любым созвоном</b> — Телемост, Zoom, Meet, Teams: звук берётся из системы, а не из приложения.</p>
         <p><b>Компактный режим</b> — кнопка с двумя полосками в шапке: окно сжимается до строки со следующим пунктом.</p>
         <p><b>Всё хранится локально</b> в папке Документы → SozvonQuest: транскрипт, разбор, балл.</p>
+        <p><b>При показе всего экрана</b> собеседник увидит и эту панель. Показывай окно созвона или отдельную вкладку.</p>
       </div>
       <div class="ob-actions"><button class="btn ghost small" id="ob-back-3">Назад</button><button class="btn primary" id="ob-finish">К пунктам</button></div>
     </div>
@@ -82,6 +84,7 @@
 
   <!-- ============ SETUP ============ -->
   <section id="screen-setup" class="screen active">
+    <div class="update-pill" id="update-pill" hidden></div>
     <div class="best-pill" id="best-pill" hidden></div>
     <h1>Что важно<br>не забыть на созвоне?</h1>
     <div class="type-tabs" id="type-tabs" role="tablist"></div>
@@ -150,6 +153,7 @@
       <button class="btn ghost" id="btn-finish">Завершить созвон</button>
     </div>
     <div class="err" id="live-err" hidden></div>
+    <a href="#" class="err-report" id="err-report" hidden>Сообщить о проблеме</a>
   </section>
 
   <!-- ============ RESULT ============ -->
@@ -266,6 +270,7 @@
         <label class="field"><span>Макс. интервал сверки, мс</span><input data-k="CHECK_INTERVAL_MS" type="number" step="500" min="1000"></label>
         <label class="field"><span>Папка для итогов</span><input data-k="SESSIONS_DIR" type="text"></label>
       </div>
+      <div class="support-row"><span id="app-version"></span><a href="#" id="btn-report">Сообщить о проблеме</a><a href="#" id="btn-logs">Папка логов</a></div>
       <div class="modal-foot"><button class="btn ghost small" id="btn-settings-wizard">Мастер настройки</button><button class="btn primary small" id="btn-settings-save">Сохранить</button></div>
     </div>
   </div>

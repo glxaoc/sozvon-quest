@@ -41,12 +41,13 @@ async function load(config, log = () => {}) {
   try { return await loading; } finally { loading = null; }
 }
 
-async function complete(config, { system, user, maxTokens = 700, temperature = 0, schema = null, log = () => {} }) {
+async function complete(config, { system, user, maxTokens = 700, temperature = 0, schema = null, signal = null, log = () => {} }) {
   const run = async () => {
     const s = await load(config, log);
     const { LlamaChatSession } = await import('node-llama-cpp');
     const session = new LlamaChatSession({ contextSequence: s.sequence, systemPrompt: system, autoDisposeSequence: false });
     const opts = { maxTokens, temperature, budgets: { thoughtTokens: 0 } };
+    if (signal) { opts.signal = signal; opts.stopOnAbortSignal = true; }
     // строгая схема ответа: модель физически не может выдать ничего, кроме нужного JSON
     // Схема через грамматику ломается о режим размышлений Qwen3.5: первая «{» уходит в скрытый блок.
     // Без неё и с thoughtTokens:0 модель отдаёт корректный JSON в ```json-блоке, extractJson его разбирает.

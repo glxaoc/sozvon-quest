@@ -65,7 +65,7 @@
     S.session = snap; S.theses = snap.theses; S.transcriptLines = []; S.partials = { me: '', them: '' }; S.praise = 0;
     renderTheses(); renderTranscript(); updateProgress(false);
     $('mock-bar').hidden = !!replay || S.cfg.STT_PROVIDER !== 'mock';
-    $('live-err').hidden = true;
+    $('live-err').hidden = true; $('err-report').hidden = true;
     $('streak-stamp').hidden = true;
     show('live');
     $('dog').hidden = false; dogState('idle'); S.lastSpeechAt = Date.now(); dogSleepLoop(); markNext();
@@ -78,7 +78,7 @@
     if (replay) $('replay-badge').textContent = `${replay.name} · ${replay.speed}×`;
   }
 
-  function showLiveError(msg) { const el = $('live-err'); el.textContent = msg; el.hidden = false; }
+  function showLiveError(msg) { const el = $('live-err'); el.textContent = msg; el.hidden = false; $('err-report').hidden = false; }
 
   // ---------- replay (скрытый тестовый режим) ----------
   async function pickAndReplay() {
@@ -508,6 +508,7 @@
   }
   function onModelsProgress({ id, bytes }) {
     const m = S.models && S.models[id]; if (!m) return;
+    if (id === 'stt' && $('kdl-bar')) { $('kdl-bar').style.width = `${Math.round((bytes / m.total) * 100)}%`; $('kdl-num').textContent = bytes >= m.total ? 'готово' : `${mb(bytes)} из ${mb(m.total)}`; }
     $(`dl-bar-${id}`).style.width = `${Math.round((bytes / m.total) * 100)}%`;
     const now = Date.now(); const prev = S.dlSpeed || {};
     if (prev.id === id && now - prev.t > 1500) { S.dlRate = (bytes - prev.b) / ((now - prev.t) / 1000); S.dlSpeed = { id, t: now, b: bytes }; }
@@ -525,14 +526,35 @@
     $('ob-dl-start').disabled = false; $('ob-dl-start').textContent = 'Продолжить';
     await refreshModels();
     if (r.error) { $('ob-status-local').className = 'ob-status bad'; $('ob-status-local').textContent = `Загрузка прервалась: ${r.error}. Нажми «Продолжить», скачанное не пропадёт.`; return; }
-    $('ob-status-local').className = 'ob-status'; $('ob-status-local').textContent = 'Проверяю модель…';
+    await benchLocal();
+  }
+  async function benchLocal() {
+    const st = $('ob-status-local');
+    st.className = 'ob-status'; st.textContent = 'Проверяю, как быстро модель работает на этом компьютере…';
+    $('ob-next-local').disabled = true;
     const c = await window.api.modelsCheck();
-    $('ob-status-local').className = c.ok ? 'ob-status ok' : 'ob-status bad';
-    $('ob-status-local').textContent = c.ok ? `Работает · первый ответ за ${(c.ms / 1000).toFixed(1)} с` : `Модель не запустилась: ${c.error || 'нет ответа'}`;
+    $('ob-next-local').disabled = false;
+    if (c.error) { st.className = 'ob-status bad'; st.textContent = `Модель не запустилась: ${c.error}. Лучше режим с ключом.`; $('ob-to-key').hidden = false; $('ob-next-local').disabled = true; return; }
+    if (c.slow) {
+      st.className = 'ob-status warn';
+      st.textContent = c.ok ? `Пункт будет закрываться примерно за ${Math.round(c.ms / 1000)} с после фразы. Для живого разговора это медленно, лучше режим с ключом.` : 'Сверка на этом компьютере занимает больше 20 секунд. Для живого разговора лучше режим с ключом.';
+      $('ob-to-key').hidden = false; $('ob-next-local').textContent = 'Всё равно без ключа';
+      return;
+    }
+    st.className = 'ob-status ok'; st.textContent = `Работает быстро: сверка за ${(c.ms / 1000).toFixed(1)} с`;
+    $('ob-to-key').hidden = true; $('ob-next-local').textContent = 'Дальше';
+  }
+  async function downloadSttForKey() {
+    const st = await window.api.modelsStatus(); S.models = st;
+    if (st.stt.ready) { S.cfg = await window.api.saveConfig({ STT_PROVIDER: 'local' }); return; }
+    $('kdl-item').hidden = false; $('kdl-num').textContent = `0 из ${mb(st.stt.total)}`;
+    const r = await window.api.modelsDownload(['stt']);
+    if (r.ok) { S.cfg = await window.api.saveConfig({ STT_PROVIDER: 'local' }); $('kdl-num').textContent = 'готово'; $('kdl-item').classList.add('ready'); renderSetupChips(); }
+    else $('kdl-num').textContent = 'не скачалось — пока буду слушать через облако';
   }
   async function pickMode(mode) {
     if (mode === 'local') { S.cfg = await window.api.saveConfig({ LLM_PROVIDER: 'local', STT_PROVIDER: 'local' }); obPane('local'); }
-    else { S.cfg = await window.api.saveConfig({ LLM_PROVIDER: 'aitunnel', STT_PROVIDER: 'aitunnel' }); obPane('key'); }
+    else { S.cfg = await window.api.saveConfig({ LLM_PROVIDER: 'aitunnel', STT_PROVIDER: 'aitunnel' }); obPane('key'); if (S.cfg.hasAitunnelKey) downloadSttForKey(); }
   }
   function obStep(n) {
     document.querySelectorAll('.ob-pane').forEach((p) => { p.hidden = Number(p.dataset.pane) !== n; });
@@ -548,6 +570,7 @@
       OB[provider] = true;
       S.cfg = await window.api.saveConfig({ AITUNNEL_API_KEY: input.value.trim() });
       $('ob-next-1').disabled = false;
+      downloadSttForKey();
     } else {
       st.className = 'ob-status bad'; st.textContent = `Не сработало: ${r.error}`;
     }
@@ -567,6 +590,7 @@
     $('ob-pick-local').addEventListener('click', () => pickMode('local'));
     $('ob-pick-key').addEventListener('click', () => pickMode('key'));
     $('ob-back-local').addEventListener('click', () => obPane('choice'));
+    $('ob-to-key').addEventListener('click', () => pickMode('key'));
     $('ob-back-key').addEventListener('click', () => obPane('choice'));
     $('ob-dl-start').addEventListener('click', startModelsDownload);
     $('ob-next-local').addEventListener('click', () => obPane('done'));
@@ -721,6 +745,16 @@
     try { $('in-title').value = localStorage.getItem('cq.title') || ''; } catch (e) { /* noop */ }
     renderTypeTabs(); renderTplSelect(); bindTemplates();
     $('btn-compact').addEventListener('click', () => setCompact(!S.compact));
+    const report = async (e) => { e.preventDefault(); await window.api.reportProblem(); alert('Диагностика скопирована в буфер обмена и открыта форма на GitHub. Если аккаунта на GitHub нет — вставь текст в сообщение автору в Telegram.'); };
+    $('btn-report').addEventListener('click', report);
+    $('err-report').addEventListener('click', report);
+    $('btn-logs').addEventListener('click', (e) => { e.preventDefault(); window.api.openLogs(); });
+    window.api.version().then((v) => { $('app-version').textContent = `Версия ${v}`; });
+    if (!S.args.demo && !S.args.replay && !S.args.screenshot) window.api.checkUpdate().then((u) => {
+      if (!u || !u.available) return;
+      const p = $('update-pill'); p.hidden = false; p.textContent = `Вышла версия ${u.latest} — скачать`;
+      p.onclick = () => window.api.openUrl(u.url);
+    }).catch(() => {});
     renderSetupChips();
     renderBest();
     bindOnboarding();

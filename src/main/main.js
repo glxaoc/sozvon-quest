@@ -1,7 +1,9 @@
 'use strict';
 const path = require('path');
 const fs = require('fs');
-const { app, BrowserWindow, ipcMain, session: esession, desktopCapturer, shell, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, session: esession, desktopCapturer, shell, dialog, clipboard } = require('electron');
+const support = require('./support');
+const localTone = require('./stt/local-tone');
 const config = require('./config');
 const { Session } = require('./session');
 const replay = require('./replay');
@@ -31,6 +33,7 @@ const diarizeCache = new Map(); // path → результат (в памяти 
 const log = (...a) => {
   const line = a.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ');
   console.log('[cq]', line);
+  support.writeLog(a);
   if (win && !win.isDestroyed()) win.webContents.send('log', line);
 };
 
@@ -59,6 +62,8 @@ function createWindow() {
   });
   win.setAlwaysOnTop(true, 'floating');
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  win.webContents.on('console-message', (_e, level, message) => { if (level >= 3) log('renderer error', message); });
+  win.webContents.on('render-process-gone', (_e, d) => log('renderer gone', d.reason));
 
   if (ARGS.screenshot) {
     // dev: снимок через 1.5 с; в --demo ещё один через 9 с (когда LLM успеет закрыть тезисы), затем выход
@@ -88,10 +93,21 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  support.initLog(app.getPath('userData'));
+  const migrated = config.migrate(app.getPath('userData'));
+  if (migrated) log('config migrated', migrated.join('; ') || 'без изменений');
+  process.on('uncaughtException', (e) => log('uncaught', e && e.stack ? e.stack : String(e)));
+  process.on('unhandledRejection', (e) => log('unhandled', e && e.stack ? e.stack : String(e)));
   cfg = config.load(app.getPath('userData'));
   if (!cfg.MODELS_DIR) cfg.MODELS_DIR = path.join(app.getPath('userData'), 'models');
   if (ARGS.stt) cfg.STT_PROVIDER = ARGS.stt;
   else if (ARGS.demo) cfg.STT_PROVIDER = 'mock';
+  log('start', `v${app.getVersion()}`, `stt=${cfg.STT_PROVIDER}`, `llm=${cfg.LLM_PROVIDER}`, `key=${cfg.AITUNNEL_API_KEY ? 'да' : 'нет'}`);
+  // обновились с 0.1 или загрузка в мастере оборвалась: тихо докачиваем модель распознавания в фоне
+  if (cfg.STT_PROVIDER === 'local' && !localTone.modelDir(cfg) && !ARGS.demo && !ARGS.replay) {
+    models.download(cfg.MODELS_DIR, 'stt', { mirror: cfg.MODELS_MIRROR, onProgress: () => {} })
+      .then(() => log('stt model: скачана в фоне'), (e) => log('stt model: фоновая загрузка не удалась', e.message));
+  }
 
   // Системный звук: WASAPI loopback через штатный Electron API (Windows).
   esession.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
@@ -123,6 +139,10 @@ ipcMain.handle('config:set', (_e, patch) => {
 });
 
 function newSession({ title, theses, sttProvider, replay: isReplay, callType }) {
+  if (sttProvider === 'local' && !localTone.modelDir(cfg) && cfg.AITUNNEL_API_KEY) {
+    log('stt: модель на компьютере не скачана, слушаю через облако');
+    sttProvider = 'aitunnel';
+  }
   current = new Session({ title, theses, config: cfg, sttProvider, log, replay: !!isReplay, callType });
   current.on('transcript', (ev) => send('transcript', ev));
   current.on('thesis', (ev) => send('thesis', ev));
@@ -256,14 +276,35 @@ ipcMain.handle('models:download', async (_e, ids) => {
 });
 ipcMain.handle('models:cancel', () => { if (dlAbort) dlAbort.abort(); return true; });
 ipcMain.handle('models:check', async () => {
-  // короткая проверка локальной сверки: загрузить модель и ответить на тестовый вопрос
-  const t0 = Date.now();
+  // замер: загрузить модель и выполнить настоящую сверку (второй вызов — «тёплый», как во время созвона)
+  const { Matcher } = require('./llm/matcher');
+  const m = new Matcher({ ...cfg, LLM_PROVIDER: 'local' }, log);
+  const input = {
+    theses: [{ id: 't1', text: 'Назвать стоимость пилота' }, { id: 't2', text: 'Спросить, кто принимает решение' }, { id: 't3', text: 'Договориться о следующем шаге и дате' }],
+    recentMe: [{ text: 'Смотрите, пилот на две недели стоит сто двадцать тысяч рублей.', isNew: true }], recentThem: '',
+  };
   try {
-    const { complete } = require('./llm/chat');
-    const r = await complete({ ...cfg, LLM_PROVIDER: 'local' }, { system: 'Отвечай только JSON.', user: 'Верни {"ok":true}', maxTokens: 20, schema: { type: 'object', properties: { ok: { type: 'boolean' } } }, log });
-    return { ok: /true/.test(r.text), ms: Date.now() - t0 };
+    const t0 = Date.now();
+    await localLlm.warmup(cfg, log);
+    const loadMs = Date.now() - t0;
+    const t1 = Date.now();
+    const race = await Promise.race([m.check(input), new Promise((r) => setTimeout(() => r('timeout'), 20000))]);
+    const ms = Date.now() - t1;
+    log('local bench', { loadMs, ms, timeout: race === 'timeout' });
+    return { ok: race !== 'timeout', ms, loadMs, slow: race === 'timeout' || ms > 5000 };
   } catch (e) { return { ok: false, error: e.message }; }
 });
+
+// ---- поддержка: диагностика, лог, обновления --------------------------------
+ipcMain.handle('support:report', () => {
+  const text = support.diagnostics({ version: app.getVersion(), cfg });
+  clipboard.writeText(text);
+  shell.openExternal(support.issueUrl('Проблема в Созвон Квест', `Что случилось:\n\n\n---\n${text}`));
+  return { copied: true };
+});
+ipcMain.handle('support:logs', () => shell.showItemInFolder(path.join(app.getPath('userData'), 'logs', 'sozvon.log')));
+ipcMain.handle('update:check', () => support.checkUpdate(app.getVersion()));
+ipcMain.handle('app:version', () => app.getVersion());
 ipcMain.handle('templates:list', () => templates.read(app.getPath('userData')));
 ipcMain.handle('templates:save', (_e, t) => templates.save(app.getPath('userData'), t));
 ipcMain.handle('templates:remove', (_e, id) => templates.remove(app.getPath('userData'), id));
