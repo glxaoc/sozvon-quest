@@ -10,7 +10,6 @@
     "shot": "electron . --screenshot=outputs/shot.png",
     "test:llm": "node test/test-llm.js",
     "test:stt": "node test/test-stt-chunked.js",
-    "test:audio": "node test/test-audio-file.js",
     "build": "electron-builder --win portable"
   },
   "devDependencies": {

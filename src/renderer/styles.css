@@ -271,7 +271,7 @@ h3 { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: 
 .result-title.rise, .dog-say.rise { animation: rise 380ms var(--ease); }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .result-sub { font-size: 12px; color: var(--text-faint); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.record-pill { position: absolute; top: 12px; right: 12px; background: var(--gold); color: var(--ink); font-size: 11px; font-weight: 800; border-radius: 999px; padding: 4px 10px; letter-spacing: .04em; }
+.record-pill { position: absolute; bottom: 14px; right: 16px; background: var(--gold); color: var(--ink); font-size: 11px; font-weight: 800; border-radius: 999px; padding: 4px 10px; letter-spacing: .04em; }
 .record-pill.pop { animation: stamp 420ms var(--ease), glow 700ms ease-in-out 2; }
 @keyframes glow { 50% { box-shadow: 0 0 0 6px rgba(215,168,50,.35); } }
 

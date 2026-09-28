@@ -102,6 +102,8 @@ app.whenReady().then(() => {
   if (!cfg.MODELS_DIR) cfg.MODELS_DIR = path.join(app.getPath('userData'), 'models');
   if (ARGS.stt) cfg.STT_PROVIDER = ARGS.stt;
   else if (ARGS.demo) cfg.STT_PROVIDER = 'mock';
+  // демо не пишет в настоящую историю, иначе в «Рекорд» попадает тестовый созвон
+  if (ARGS.demo) cfg.SESSIONS_DIR = path.join(app.getPath('temp'), 'sozvon-quest-demo');
   log('start', `v${app.getVersion()}`, `stt=${cfg.STT_PROVIDER}`, `llm=${cfg.LLM_PROVIDER}`, `key=${cfg.AITUNNEL_API_KEY ? 'да' : 'нет'}`);
   // обновились с 0.1 или загрузка в мастере оборвалась: тихо докачиваем модель распознавания в фоне
   if (cfg.STT_PROVIDER === 'local' && !localTone.modelDir(cfg) && !ARGS.demo && !ARGS.replay) {

@@ -64,7 +64,7 @@
   function enterLive(snap, replay) {
     S.session = snap; S.theses = snap.theses; S.transcriptLines = []; S.partials = { me: '', them: '' }; S.praise = 0;
     renderTheses(); renderTranscript(); updateProgress(false);
-    $('mock-bar').hidden = !!replay || S.cfg.STT_PROVIDER !== 'mock';
+    $('mock-bar').hidden = !!replay || !!S.args.demo || S.cfg.STT_PROVIDER !== 'mock';
     $('live-err').hidden = true; $('err-report').hidden = true;
     $('streak-stamp').hidden = true;
     show('live');
@@ -815,6 +815,7 @@
       setTimeout(() => window.api.mockSay('me', 'Пилот на две недели стоит сто двадцать тысяч рублей, начать можем со следующего понедельника'), 900);
       setTimeout(() => window.api.mockSay('them', 'Понял. А есть примеры, где это уже сработало?'), 6000);
       setTimeout(() => window.api.mockSay('me', 'У одного клиента наш агент вернул один и девять миллиона рублей за два месяца. Кстати, а кто у вас принимает решение по таким проектам?'), 6500);
+      setTimeout(() => window.api.mockSay('them', 'Решение за мной и финдиректором, бюджет на квартал заложен. Хотим стартовать до конца месяца.'), 8500);
     }
   }
 
